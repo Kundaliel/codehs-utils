@@ -39,7 +39,7 @@ class Banner:
     def draw(self, row: int, col: int) -> Rect:
         return print_at(row, col, self)
 
-    def align(self, width: int, align: str = "left", fillchar: str = " ") -> str:
+    def align(self, width: int, align: str = "left", fillchar: Optional[str] = None) -> str:
         return BannerRow([self]).align(width, align, fillchar)
 
     def __str__(self) -> str:
@@ -103,7 +103,7 @@ class BannerRow:
         lines = [blank] * above + b.lines + [blank] * (extra - above)
         return [ln + _RESET if "\033" in ln else ln for ln in lines]
 
-    def _render(self, gaps: List[int], fillchar: str = " ") -> str:
+    def _render(self, gaps: List[int], fillchar: Optional[str] = " ") -> str:
         height = self.height
         cols = [self._column(b, height) for b in self.banners]
         rows = []
@@ -116,9 +116,11 @@ class BannerRow:
             rows.append("".join(pieces))
         return "\n".join(rows)
 
-    def align(self, width: int, align: str = "left", fillchar: str = " ") -> str:
+    def align(self, width: int, align: str = "left", fillchar: Optional[str] = None) -> str:
         if not self.banners:
             return ""
+        if fillchar is None:
+            fillchar = " "  # banners are solid blocks: pad with real spaces
         gaps = [self.gap] * (len(self.banners) - 1)
         pad = max(0, width - self.width)
         left = right = 0
@@ -185,7 +187,8 @@ def banner(
     if width is None:
         width = _calculate_box_width(text)
     padding = max(0, padding)
-    line = align_text(text, width, align=align)
+    # Banners need real spaces (not cursor moves) so the background color fills the box.
+    line = align_text(text, width, align=align, fillchar=" ")
     blank = " " * width
 
     def _style(s: str) -> str:

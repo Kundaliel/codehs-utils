@@ -431,14 +431,14 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | Name | Description |
 |---|---|
 | `.wrap(width, collapse_space=True)` | ANSI-aware word wrap of the combined text |
-| `.align(width, align="left", fillchar=" ")` | Align the combined text within `width` |
+| `.align(width, align="left", fillchar=None)` | Align the combined text within `width` |
 
 ### Text — `text`
 
 | Name | Description |
 |---|---|
 | `wrap_text(text, width, collapse_space=True, break_long_words=True, preserve_newlines=True)` | ANSI-aware word wrapping |
-| `align_text(text, width, align="left", fillchar=" ")` | `"left"`, `"right"`, `"center"`, or `"justify"` alignment |
+| `align_text(text, width, align="left", fillchar=None)` | `"left"`, `"right"`, `"center"`, or `"justify"` alignment |
 
 ### Printing — `printing`
 
@@ -454,7 +454,7 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `LargeText(text, font="5x7", format="block", color=, colors=, background=, background_colors=, styles=, spacing=1, cell_width=2)` | Multi-row banner text rendered from a pixel font. `font` is `"3x5"` or `"5x7"`; `format` is `"block"` (chunky) or `"pixel"` (half-block, ~half as tall) |
 | `LargeText.width` / `.height` | Rendered size in terminal columns / rows |
 | `LargeText.wrap(width)` | Wraps at whole-character boundaries only |
-| `LargeText.align(width, align="left", fillchar=" ")` | Aligns each rendered row within `width` |
+| `LargeText.align(width, align="left", fillchar=None)` | Aligns each rendered row within `width` |
 | `LargeText.draw(row, col)` | Draw at a position (wraps `print_at`) |
 | `LargeText.supported_chars(font="5x7")` | Every character the font can render |
 
@@ -477,7 +477,7 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `Banner(lines)` | A block of text padded to a uniform width |
 | `Banner.height` | Number of lines |
 | `Banner.draw(row, col)` | Draw at a position, returns the `Rect` drawn |
-| `Banner.align(width, align="left", fillchar=" ")` | Align the banner within a wider field |
+| `Banner.align(width, align="left", fillchar=None)` | Align the banner within a wider field |
 | `BannerRow(banners, gap=1, valign="top")` | Lay several banners out side by side |
 | `BannerRow.width` `.height` | Combined dimensions |
 | `BannerRow.set_gap(gap)` / `.set_valign(valign)` | Adjust spacing / vertical alignment |
@@ -814,7 +814,7 @@ Source code for the `drawing_demo`:
     drawing_demo.run()
 """
 
-from codehs_utils import clear_screen, set_cursor_pos, fill_rect, set_pixel, ColorLike
+from codehs_utils import clear_screen, print_at, fill_rect, set_pixel, ColorLike
 
 
 def run() -> None:
@@ -824,12 +824,15 @@ def run() -> None:
     # which you can reuse (e.g. Rect.contains(x, y) for hit-testing).
     fill_rect(2, 2, width=20, height=4, color="steelblue")
     box = fill_rect(2, 26, width=20, height=4, color="indianred", char="#")
-    print(f"\nSecond box: {box}")  # Rect(row=2, col=26, width=20, height=4)
+    print_at(7, 2, f"Second box: {box}")  # Rect(row=2, col=26, width=20, height=4)
 
     # The half-block pixel canvas: each terminal cell holds two "pixels"
     # (top half + bottom half), so you get roughly square pixels instead
-    # of the usual tall/narrow terminal cells. Coordinates are 1-based.
-    top, left = 8, 2
+    # of the usual tall/narrow terminal cells. Coordinates are 1-based, and
+    # y counts pixels (2 per terminal row): terminal row r covers y = 2r-1
+    # and y = 2r. So to start the circle at terminal row 9, start at y = 17.
+    top_row, left = 9, 2
+    top = 2 * top_row - 1
     red = ColorLike("red")
     for y in range(10):
         for x in range(10):
@@ -837,8 +840,7 @@ def run() -> None:
             if (x - 4.5) ** 2 + (y - 4.5) ** 2 <= 20:
                 set_pixel(left + x, top + y, red)
 
-    set_cursor_pos(top + 6, 1)
-    print("A circle drawn one half-block pixel at a time.")
+    print_at(top_row + 6, 2, "A circle drawn one half-block pixel at a time.")
 
 
 if __name__ == "__main__":

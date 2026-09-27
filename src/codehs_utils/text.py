@@ -180,25 +180,26 @@ def wrap_text(text, width, collapse_space=True, break_long_words=True, preserve_
     return "\n".join(lb.lines)
 
 
-def _pad(n: int, fillchar: str) -> str:
-    """Return padding of length n. If fillchar is the default space,
-    use an ANSI cursor-forward escape instead of printing literal
-    spaces, so the padded area doesn't overwrite/clear whatever is
-    already on screen there. Any other fillchar is printed literally,
-    since a cursor move can't also draw a visible character."""
+def _pad(n: int, fillchar) -> str:
+    """Return padding of length n. If fillchar is None (the default),
+    use an ANSI cursor-forward escape instead of printing anything, so
+    the padded area doesn't overwrite/clear whatever is already on
+    screen there. Any actual character (including " ") is printed
+    literally, which is what you want when the padding needs to carry
+    a background color, e.g. inside a banner."""
     if n <= 0:
         return ""
-    if fillchar == " ":
+    if fillchar is None:
         return f"\033[{n}C"
     return fillchar * n
 
 
-def align_text(text, width: int, align: str = "left", fillchar: str = " ") -> str:
+def align_text(text, width: int, align: str = "left", fillchar=None) -> str:
     if align not in ("left", "right", "center", "justify"):
         raise ValueError(
             f"Unknown align mode: '{align}'. Use 'left', 'right', 'center', or 'justify'."
         )
-    if len(fillchar) != 1:
+    if fillchar is not None and len(fillchar) != 1:
         raise ValueError("fillchar must be a single character.")
     out = []
     for line in str(text).split("\n"):

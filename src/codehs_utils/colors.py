@@ -163,7 +163,7 @@ class StyledText:
     def wrap(self, width: int, collapse_space: bool = True) -> str:
         return wrap_text(str(self), width, collapse_space=collapse_space)
 
-    def align(self, width: int, align: str = "left", fillchar: str = " ") -> str:
+    def align(self, width: int, align: str = "left", fillchar: Optional[str] = None) -> str:
         return align_text(str(self), width, align=align, fillchar=fillchar)
 
     def __add__(self, other):

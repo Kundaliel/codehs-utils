@@ -446,7 +446,7 @@ class LargeText:
 
         return "\n".join(self._clone(line).render() for line in lines)
 
-    def align(self, width: int, align: str = "left", fillchar: str = " ") -> str:
+    def align(self, width: int, align: str = "left", fillchar: Optional[str] = None) -> str:
         """Aligns each rendered row within `width`, ANSI-aware."""
         rendered = self.render()
         lines = [align_text(line, width, align=align, fillchar=fillchar) for line in rendered.split("\n")]
