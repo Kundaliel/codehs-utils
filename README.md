@@ -956,7 +956,7 @@ def run() -> None:
             c.print_at(y, x, " ")  # erase the old position
             dx, dy = move
             x = max(1, min(width, x + dx))
-            y = max(3, min(height, y + dy))  # stay clear of the banner
+            y = max(4, min(height, y + dy))  # stay clear of the banner
             c.print_at(y, x, "@")
 
 
