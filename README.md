@@ -528,6 +528,9 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 
 ## Examples
 
+The snippets below are quick tastes. For full, runnable scripts, see the
+[`codehs_utils.examples`](#runnable-examples) package described next.
+
 ### Create a Colorful Banner
 
 ```python
@@ -562,6 +565,401 @@ box = Rect(row=3, col=5, width=30, height=6)
 box.fill(color="black")
 box.draw_border(color="white", style="rounded")
 print_at(box.row + 2, box.col + 2, "Press any key to continue...")
+```
+
+### Runnable Examples
+
+The package ships a small `codehs_utils.examples` subpackage with one self-contained script per feature area. Each module exposes a `run()` function, so you can pull one in and run it with a plain import -- no command line needed, which also makes these usable on CodeHS:
+
+```python
+from codehs_utils.examples import colors_demo
+
+colors_demo.run()
+```
+
+Below is the full source for every example.
+
+#### `colors_demo` -- Named colors, hex, RGB, mixing, lighten/darken/contrast
+
+```python
+from codehs_utils.examples import colors_demo
+
+colors_demo.run()
+```
+
+Source code for the `colors_demo`:
+
+```python
+"""Named colors, hex, RGB, mixing, lighten/darken/contrast.
+
+    from codehs_utils.examples import colors_demo
+    colors_demo.run()
+"""
+
+import codehs_utils as c
+from codehs_utils import ColorLike, ColorText
+
+
+def run() -> None:
+    # Three ways to specify the same color.
+    named = ColorLike("tomato")
+    hexed = ColorLike("#ff6347")
+    rgb = ColorLike((255, 99, 71))
+    print(ColorText(f"named == hex == rgb : {named == hexed == rgb}"))
+
+    # Foreground and background.
+    print(ColorText("white text on a blue background", foreground="white", background="blue"))
+
+    # Bold/underline/etc. via the shared style methods.
+    print(ColorText("bold + underline").bold().underline().set_color("cyan"))
+
+    # Lighten / darken / mix, and picking a readable text color for a swatch.
+    base = ColorLike("forestgreen")
+    print(ColorText(f"  lighter  ", background=base.lighten(0.4)).set_color(base.lighten(0.4).contrast()))
+    print(ColorText(f"  base     ", background=base).set_color(base.contrast()))
+    print(ColorText(f"  darker   ", background=base.darken(0.4)).set_color(base.darken(0.4).contrast()))
+
+    blend = ColorLike("red").mix("blue", t=0.5)
+    print(ColorText(f"  50/50 red+blue = {blend.to_hex()}  ", background=blend).set_color(blend.contrast()))
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `gradients_demo` -- GradientText presets, custom stops, gradient backgrounds
+
+```python
+from codehs_utils.examples import gradients_demo
+
+gradients_demo.run()
+```
+
+Source code for the `gradients_demo`:
+
+```python
+"""GradientText presets, custom stops, and gradient backgrounds.
+
+    from codehs_utils.examples import gradients_demo
+    gradients_demo.run()
+"""
+
+from codehs_utils import GradientText
+
+
+def run() -> None:
+    # Every built-in preset has a shortcut classmethod...
+    print(GradientText.rainbow("This text has rainbow colors!"))
+    print(GradientText.fire("Fire preset"))
+    print(GradientText.ocean("Ocean preset"))
+
+    # ...which is just a thin wrapper around from_preset().
+    print(GradientText.from_preset("Same thing via from_preset()", preset="sunset"))
+
+    # Custom stops instead of a preset.
+    print(GradientText("Custom stops: red -> orange -> yellow", colors=["red", "orange", "yellow"]))
+
+    # The gradient can live on the background instead of the text.
+    print(GradientText("Rainbow background!", background_colors="rainbow", color="black"))
+
+    # Styles stack the same way ColorText's do.
+    print(GradientText("Bold rainbow", colors="rainbow").bold())
+
+    print("\nEvery available preset:", ", ".join(GradientText.list_presets()))
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `banners_demo` -- banner() boxes, side-by-side layout, and alignment
+
+```python
+from codehs_utils.examples import banners_demo
+
+banners_demo.run()
+```
+
+Source code for the `banners_demo`:
+
+```python
+"""banner() boxes, side-by-side layout, and alignment.
+
+    from codehs_utils.examples import banners_demo
+    banners_demo.run()
+"""
+
+from codehs_utils import banner
+
+
+def run() -> None:
+    # A simple colored box.
+    print(banner("Hello, World!", color="white", background="blue"))
+
+    # Banners can be added together to sit side by side...
+    left = banner("LEFT", background="darkred", color="white")
+    right = banner("RIGHT", background="darkgreen", color="white")
+    row = left + right
+    print(row)
+
+    # ...and a BannerRow can be aligned within a wider space.
+    print(row.align(60, align="center"))
+    print(row.align(60, align="justify"))
+
+    # width/padding/align control the box itself.
+    print(banner("centered, padding=2", width=40, padding=2, align="center", background="purple", color="white"))
+    print(banner("left aligned", width=40, align="left", background="purple", color="white"))
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `bigtext_demo` -- LargeText big pixel-font banners, block and half-block styles
+
+```python
+from codehs_utils.examples import bigtext_demo
+
+bigtext_demo.run()
+```
+
+Source code for the `bigtext_demo`:
+
+```python
+"""LargeText: big pixel-font banners, block and half-block styles.
+
+    from codehs_utils.examples import bigtext_demo
+    bigtext_demo.run()
+"""
+
+from codehs_utils import LargeText
+
+
+def run() -> None:
+    # "block" format: chunky, one font-pixel per `cell_width` columns.
+    big = LargeText("HI", font="5x7", format="block", colors="rainbow")
+    print(big.render())
+
+    # "pixel" format packs two font rows per terminal row (half-block
+    # characters), so it comes out roughly half as tall for the same size.
+    print()
+    small_font = LargeText("OK", font="3x5", format="pixel", color="lime")
+    print(small_font.render())
+
+    # A gradient background instead of a gradient foreground.
+    print()
+    bg = LargeText("GO", font="5x7", color="black", background_colors="fire")
+    print(bg.render())
+
+    print("\nCharacters the 5x7 font supports:", LargeText.supported_chars("5x7"))
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `slow_print_demo` -- Typewriter-style output with slow_print()
+
+```python
+from codehs_utils.examples import slow_print_demo
+
+slow_print_demo.run()
+```
+
+Source code for the `slow_print_demo`:
+
+```python
+"""Typewriter-style output with slow_print().
+
+    from codehs_utils.examples import slow_print_demo
+    slow_print_demo.run()
+"""
+
+from codehs_utils import slow_print, PrintOptions, GradientText
+
+
+def run() -> None:
+    # A plain string, colored via PrintOptions since it's not already
+    # a ColorText/GradientText.
+    slow_print("Loading", PrintOptions(speed=20, color="cyan", end=""))
+    slow_print("...", PrintOptions(speed=4, color="cyan"))
+
+    # A GradientText keeps its per-character coloring while it types out.
+    slow_print(GradientText("Rainbow, one letter at a time!", colors="rainbow"), PrintOptions(speed=25))
+
+    # newline_delay adds an extra pause after each line break -- handy for
+    # a multi-line "story" effect.
+    story = "Once upon a time...\nthere was a terminal.\nThe end."
+    slow_print(story, PrintOptions(speed=35, newline_delay=0.6, color="yellow"))
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `drawing_demo` -- fill_rect() and the half-block pixel canvas (set_pixel)
+
+```python
+from codehs_utils.examples import drawing_demo
+
+drawing_demo.run()
+```
+
+Source code for the `drawing_demo`:
+
+```python
+"""fill_rect() and the half-block pixel canvas (set_pixel).
+
+    from codehs_utils.examples import drawing_demo
+    drawing_demo.run()
+"""
+
+from codehs_utils import clear_screen, set_cursor_pos, fill_rect, set_pixel, ColorLike
+
+
+def run() -> None:
+    clear_screen()
+
+    # A couple of filled rectangles. fill_rect() returns the Rect it drew,
+    # which you can reuse (e.g. Rect.contains(x, y) for hit-testing).
+    fill_rect(2, 2, width=20, height=4, color="steelblue")
+    box = fill_rect(2, 26, width=20, height=4, color="indianred", char="#")
+    print(f"\nSecond box: {box}")  # Rect(row=2, col=26, width=20, height=4)
+
+    # The half-block pixel canvas: each terminal cell holds two "pixels"
+    # (top half + bottom half), so you get roughly square pixels instead
+    # of the usual tall/narrow terminal cells. Coordinates are 1-based.
+    top, left = 8, 2
+    red = ColorLike("red")
+    for y in range(10):
+        for x in range(10):
+            # A simple filled circle.
+            if (x - 4.5) ** 2 + (y - 4.5) ** 2 <= 20:
+                set_pixel(left + x, top + y, red)
+
+    set_cursor_pos(top + 6, 1)
+    print("A circle drawn one half-block pixel at a time.")
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `buttons_demo` -- A mouse-driven app with clickable Button widgets
+
+```python
+from codehs_utils.examples import buttons_demo
+
+buttons_demo.run()
+```
+
+Source code for the `buttons_demo`:
+
+```python
+"""A mouse-driven app: clickable Button widgets, ESC to quit.
+
+    from codehs_utils.examples import buttons_demo
+    buttons_demo.run()
+
+Click the buttons; the label banner updates to show the last click.
+Press ESC (or close the terminal) to exit cleanly -- `app()` always
+restores your terminal on the way out, even after an error.
+"""
+
+import codehs_utils as c
+
+
+def run() -> None:
+    clicks = {"count": 0}
+
+    def make_handler(label: str):
+        def handler():
+            clicks["count"] += 1
+            status.text = f"You clicked '{label}'! (total clicks: {clicks['count']})"
+            redraw_status()
+        return handler
+
+    with c.app(mouse=True):
+        title = c.banner("Click a button below. ESC to quit.", background="navy", color="white")
+        title.draw(1, 2)
+
+        status = c.banner(" " * 40, background="black", color="white")
+
+        def redraw_status():
+            status.draw(4, 2)
+
+        redraw_status()
+
+        buttons = [
+            c.Button("Red", row=7, col=2, background="crimson", on_click=make_handler("Red")),
+            c.Button("Green", row=7, col=14, background="forestgreen", on_click=make_handler("Green")),
+            c.Button("Blue", row=7, col=28, background="royalblue", on_click=make_handler("Blue")),
+        ]
+        for b in buttons:
+            b.draw()
+
+        for event in c.events():
+            if event is None:
+                continue
+            if event.kind == "key" and event.key == "ESC":
+                break
+            for b in buttons:
+                b.handle(event)
+
+
+if __name__ == "__main__":
+    run()
+```
+
+#### `keyboard_demo` -- A keyboard-driven app (move a character with arrow keys)
+
+```python
+from codehs_utils.examples import keyboard_demo
+
+keyboard_demo.run()
+```
+
+Source code for the `keyboard_demo`:
+
+```python
+"""A keyboard-driven app: move a character with arrow keys.
+
+    from codehs_utils.examples import keyboard_demo
+    keyboard_demo.run()
+
+Use the arrow keys to move the '@' around. Press ESC to quit.
+"""
+
+import codehs_utils as c
+
+_MOVES = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
+
+
+def run() -> None:
+    width, height = c.get_terminal_size()
+    x, y = width // 2, height // 2
+
+    with c.app():
+        c.banner("Arrow keys to move, ESC to quit.", background="darkslategray", color="white").draw(1, 1)
+        c.print_at(y, x, "@")
+
+        while True:
+            key = c.get_key(timeout=None)
+            if key == "ESC":
+                break
+            move = _MOVES.get(key)
+            if move is None:
+                continue
+
+            c.print_at(y, x, " ")  # erase the old position
+            dx, dy = move
+            x = max(1, min(width, x + dx))
+            y = max(3, min(height, y + dy))  # stay clear of the banner
+            c.print_at(y, x, "@")
+
+
+if __name__ == "__main__":
+    run()
 ```
 
 ## License
