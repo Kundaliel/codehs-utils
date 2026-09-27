@@ -12,7 +12,7 @@ as it's typed out, instead of only supporting one flat foreground color.
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence, Union
+from typing import IO, List, Optional, Sequence, Union
 
 from .text import _tokenize_ansi
 from .colors import ColorLike, ColorText, GradientText, StyledText, ColorSpec, _STYLE_CODES
@@ -39,7 +39,7 @@ class PrintOptions:
     end: str = "\n"
     newline_delay: float = 0.5                    # extra pause after each '\n'
     flush: bool = True
-    stream = sys.stdout
+    stream: IO[str] = field(default_factory=lambda: sys.stdout)
 
     def __post_init__(self):
         if self.speed <= 0:
