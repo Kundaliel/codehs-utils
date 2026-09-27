@@ -42,6 +42,8 @@ from .terminal import (
 )
 from .text import wrap_text, align_text
 from .colors import ColorLike, StyledText, ColorText, GradientText, ColorSpec, GradientColors
+from .printing import PrintOptions, slow_print
+from .bigtext import LargeText
 from .drawing import (
     Banner,
     BannerRow,
@@ -70,6 +72,8 @@ __all__ = [
     "wrap_text", "align_text",
     "ColorLike", "StyledText", "ColorText", "GradientText",
     "ColorSpec", "GradientColors",
+    "PrintOptions", "slow_print",
+    "LargeText",
     "Banner", "BannerRow", "banner",
     "fill_rect", "get_pixel_size", "set_pixel", "clear_pixel", "clear_pixels",
     "Button",

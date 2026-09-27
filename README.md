@@ -9,6 +9,8 @@ A Python library for terminal colors, gradients, banners, drawing, and keyboard/
 
 - RGB and named colors for foreground and background, plus mixing/lighten/darken
 - Gradient text with built-in presets (rainbow, fire, ocean, sunset, and more)
+- Typewriter-style slow printing that understands gradients/styles, not just plain text
+- Big multi-row "banner" text rendered from a 3x5 or 5x7 pixel font, in blocky or half-block-pixel style
 - Composable text banners and boxes, alignable and laid out side by side
 - Rectangles with fill and border drawing
 - A half-block pixel canvas for square-pixel graphics
@@ -120,6 +122,67 @@ print(line)
 print(line.align(40, "center"))
 print(line.wrap(20))
 ```
+
+### Slow Printing
+
+`slow_print` reveals text one visible character at a time, typewriter-style. It takes a plain string, or any of `ColorText`/`GradientText`/`StyledText` directly — a gradient keeps the right color at each position as it's typed out, instead of only supporting one flat color:
+
+```python
+from codehs_utils import slow_print, PrintOptions, GradientText, ColorText
+
+# Plain text, colored via PrintOptions
+slow_print("Loading...", PrintOptions(speed=20, color="cyan"))
+
+# A gradient reveals its own colors character by character
+slow_print(GradientText("Rainbow!", colors="rainbow"))
+
+# Any styled/colored object works the same way
+slow_print(ColorText("Warning!", foreground="red", styles=["bold"]), PrintOptions(speed=15, end=""))
+```
+
+`PrintOptions` fields:
+- `speed` — visible characters per second (default `40`)
+- `color` / `background` / `styles` — only used for plain strings; ignored on `ColorText`/`GradientText`/`StyledText`, which already carry their own coloring
+- `end` — printed after the text finishes (default `"\n"`)
+- `newline_delay` — extra pause after each `\n` in the text (default `0.5`)
+- `flush` — flush the stream after every character (default `True`)
+- `stream` — where to write to (default `sys.stdout`)
+
+### Big Text
+
+`LargeText` renders multi-row "banner" text from a small pixel font, in one of two styles:
+
+```python
+from codehs_utils import LargeText
+
+# "block" (default): each font pixel becomes 2 terminal characters wide
+print(LargeText("HI"))
+
+# "pixel": packs 2 font rows per terminal row using half-block characters,
+# so it comes out roughly half as tall for the same size
+print(LargeText("HI", format="pixel"))
+
+# Two font sizes: "5x7" (default, more detail) or "3x5" (compact)
+print(LargeText("OK", font="3x5"))
+```
+
+Colors, gradients, and styles work the same way as `ColorText`/`GradientText` — `color`/`colors` paint the glyph strokes, `background`/`background_colors` fill the space around them:
+
+```python
+print(LargeText("WARNING", color="red", styles=["bold"]))
+print(LargeText("RAINBOW", colors="rainbow", format="pixel"))
+print(LargeText("HYPE", color="white", background="purple"))
+```
+
+`.wrap(width)` and `.align(width, align=)` work like `StyledText`'s, except wrapping only ever breaks between whole big characters — a single character is never split mid-glyph, so a line can still come out wider than `width` if one character alone doesn't fit:
+
+```python
+big = LargeText("HELLO WORLD", font="3x5", color="cyan")
+print(big.wrap(40))
+print(big.align(60, "center"))
+```
+
+Both fonts cover the full printable ASCII range (32–126: digits, `A`–`Z`, and punctuation). Letters are case-insensitive — lowercase renders using the uppercase glyph, since these fonts are too small to draw a separate lowercase form. Anything outside that range (like accented letters or emoji) just renders as a blank cell instead of raising. `LargeText.supported_chars(font="5x7")` lists every character a font can render.
 
 ### Cursor & Screen Control
 
@@ -376,6 +439,26 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 |---|---|
 | `wrap_text(text, width, collapse_space=True, break_long_words=True, preserve_newlines=True)` | ANSI-aware word wrapping |
 | `align_text(text, width, align="left", fillchar=" ")` | `"left"`, `"right"`, `"center"`, or `"justify"` alignment |
+
+### Printing — `printing`
+
+| Name | Description |
+|---|---|
+| `slow_print(text, options=None)` | Print `text` one visible character at a time; accepts a plain string or a `ColorText`/`GradientText`/`StyledText` |
+| `PrintOptions(speed=40.0, color=None, background=None, styles=None, end="\n", newline_delay=0.5, flush=True, stream=sys.stdout)` | Settings for `slow_print`; `color`/`background`/`styles` only apply to plain strings |
+
+### Big Text — `bigtext`
+
+| Name | Description |
+|---|---|
+| `LargeText(text, font="5x7", format="block", color=, colors=, background=, background_colors=, styles=, spacing=1, cell_width=2)` | Multi-row banner text rendered from a pixel font. `font` is `"3x5"` or `"5x7"`; `format` is `"block"` (chunky) or `"pixel"` (half-block, ~half as tall) |
+| `LargeText.width` / `.height` | Rendered size in terminal columns / rows |
+| `LargeText.wrap(width)` | Wraps at whole-character boundaries only |
+| `LargeText.align(width, align="left", fillchar=" ")` | Aligns each rendered row within `width` |
+| `LargeText.draw(row, col)` | Draw at a position (wraps `print_at`) |
+| `LargeText.supported_chars(font="5x7")` | Every character the font can render |
+
+
 
 ### Geometry — `geometry`
 
