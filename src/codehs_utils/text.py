@@ -10,7 +10,7 @@ import re
 import unicodedata
 from typing import List
 
-_ANSI_ESCAPE_RE = re.compile(r'\033\[[0-9;]*m')
+_ANSI_ESCAPE_RE = re.compile(r'\033\[([0-9;]*)([A-Za-z])')
 
 
 def _tokenize_ansi(s: str):
@@ -37,11 +37,25 @@ def _char_width(ch: str) -> int:
     return 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
 
 
-def _visible_len(s: str) -> int:
-    plain = _ANSI_ESCAPE_RE.sub('', s)
+def _text_width(plain: str) -> int:
     if plain.isascii() and plain.isprintable():
         return len(plain)
     return sum(_char_width(ch) for ch in plain)
+
+
+def _visible_len(s: str) -> int:
+    total = 0
+    pos = 0
+    for m in _ANSI_ESCAPE_RE.finditer(s):
+        total += _text_width(s[pos:m.start()])
+        digits, letter = m.group(1), m.group(2)
+        if letter == "C":
+            # cursor-forward: doesn't print anything, but does occupy
+            # that many columns on screen, unlike a zero-width SGR code.
+            total += int(digits) if digits else 1
+        pos = m.end()
+    total += _text_width(s[pos:])
+    return total
 
 
 def _is_reset(code: str) -> bool:
@@ -67,7 +81,8 @@ class _LineBuilder:
 
     def ansi(self, code: str):
         self.cur.append(code)
-        _apply_sgr(self.active, code)
+        if code.endswith("m"):
+            _apply_sgr(self.active, code)
 
     def char(self, ch: str, width: int):
         self.cur.append(ch)
@@ -165,6 +180,19 @@ def wrap_text(text, width, collapse_space=True, break_long_words=True, preserve_
     return "\n".join(lb.lines)
 
 
+def _pad(n: int, fillchar: str) -> str:
+    """Return padding of length n. If fillchar is the default space,
+    use an ANSI cursor-forward escape instead of printing literal
+    spaces, so the padded area doesn't overwrite/clear whatever is
+    already on screen there. Any other fillchar is printed literally,
+    since a cursor move can't also draw a visible character."""
+    if n <= 0:
+        return ""
+    if fillchar == " ":
+        return f"\033[{n}C"
+    return fillchar * n
+
+
 def align_text(text, width: int, align: str = "left", fillchar: str = " ") -> str:
     if align not in ("left", "right", "center", "justify"):
         raise ValueError(
@@ -176,24 +204,26 @@ def align_text(text, width: int, align: str = "left", fillchar: str = " ") -> st
     for line in str(text).split("\n"):
         pad = max(0, width - _visible_len(line))
         if align == "left":
-            out.append(line + fillchar * pad)
+            out.append(line + _pad(pad, fillchar))
         elif align == "right":
-            out.append(fillchar * pad + line)
+            out.append(_pad(pad, fillchar) + line)
         elif align == "center":
             left = pad // 2
-            out.append(fillchar * left + line + fillchar * (pad - left))
+            right = pad - left
+            out.append(_pad(left, fillchar) + line + _pad(right, fillchar))
         else:
             words = [w for w in line.split(" ") if w]
             gaps = len(words) - 1
             space = width - sum(_visible_len(w) for w in words)
             if gaps <= 0 or space < gaps:
-                out.append(line + fillchar * pad)
+                out.append(line + _pad(pad, fillchar))
                 continue
             base, extra = divmod(space, gaps)
             pieces = []
             for i, word in enumerate(words):
                 pieces.append(word)
                 if i < gaps:
-                    pieces.append(fillchar * (base + (1 if i < extra else 0)))
+                    gap_len = base + (1 if i < extra else 0)
+                    pieces.append(_pad(gap_len, fillchar))
             out.append("".join(pieces))
     return "\n".join(out)
