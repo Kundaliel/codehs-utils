@@ -240,7 +240,12 @@ def _draw_pixel_cell(x: int, row: int):
     top = _pixel_buf.get((x, 2 * row - 1))
     bottom = _pixel_buf.get((x, 2 * row))
     if top and bottom:
-        glyph = ColorText("\u2584", bottom, top)
+        if top == bottom:
+            # Same color on both halves: a background-colored space fills the
+            # whole cell with no glyph (and no seams).
+            glyph = ColorText(" ", background=top)
+        else:
+            glyph = ColorText("\u2584", bottom, top)
     elif top:
         glyph = ColorText("\u2580", top)
     elif bottom:

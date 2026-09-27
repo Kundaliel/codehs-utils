@@ -25,7 +25,6 @@ from .text import align_text
 
 _UPPER_HALF = "\u2580"  # ▀
 _LOWER_HALF = "\u2584"  # ▄
-_FULL_BLOCK = "\u2588"  # █
 
 RGB = Tuple[int, int, int]
 
@@ -328,6 +327,16 @@ class LargeText:
 
     # -- rendering ---------------------------------------------------------
 
+    def _solid(self, width: int, fg: Optional[RGB]) -> str:
+        """A solid cell: spaces with the color as their *background*, rather
+        than a full-block glyph, so cells fill their whole row height with no
+        seams (block glyphs often leave gaps between rows in terminal fonts).
+        With no color set, reverse video paints it in the default text color."""
+        if fg is None:
+            styles = list(self.styles) + ["reverse"]
+            return str(ColorText(" " * width, styles=styles))
+        return str(ColorText(" " * width, background=fg, styles=self.styles))
+
     def _render_block(self, grid: List[List[bool]], total: int) -> str:
         lines = []
         for row in grid:
@@ -335,7 +344,7 @@ class LargeText:
             for c in range(total):
                 if row[c]:
                     fg = self._fg_at(c, total)
-                    parts.append(str(ColorText(_FULL_BLOCK * self.cell_width, foreground=fg, styles=self.styles)))
+                    parts.append(self._solid(self.cell_width, fg))
                 else:
                     bg = self._bg_at(c, total)
                     if bg is not None:
@@ -359,7 +368,7 @@ class LargeText:
                 fg = self._fg_at(c, total)
                 bg = self._bg_at(c, total)
                 if top_on and bottom_on:
-                    parts.append(str(ColorText(_FULL_BLOCK, foreground=fg, styles=self.styles)))
+                    parts.append(self._solid(1, fg))
                 elif top_on:
                     b = bg if bottom_real else None
                     parts.append(str(ColorText(_UPPER_HALF, foreground=fg, background=b, styles=self.styles)))
