@@ -7,11 +7,11 @@ A Python library for terminal colors, gradients, banners, drawing, and keyboard/
 
 ## Features
 
-- RGB and named colors for foreground and background, plus mixing/lighten/darken
-- Gradient text with built-in presets (rainbow, fire, ocean, sunset, and more)
-- Typewriter-style slow printing that understands gradients/styles, not just plain text
-- Big multi-row "banner" text rendered from a 3x5 or 5x7 pixel font, in blocky or half-block-pixel style
-- Composable text banners and boxes, alignable and laid out side by side
+- RGB, hex, and named colors for foreground and background, with mixing, lightening, and darkening
+- Gradient text with built-in presets such as rainbow, fire, ocean, and sunset
+- Typewriter-style slow printing with support for gradients and styles
+- Large multi-row banner text rendered from a 3x5 or 5x7 pixel font, in block or half-block pixel style
+- Composable text banners and boxes with alignment and side-by-side layout
 - Rectangles with fill and border drawing
 - A half-block pixel canvas for square-pixel graphics
 - Keyboard and mouse input, including click-and-drag mouse events
@@ -81,7 +81,7 @@ print(GradientText("Custom gradient", colors=["red", "orange", "yellow"]))
 print(GradientText("Rainbow background!", background_colors="rainbow"))
 ```
 
-Mixing two colors together (used internally by `.lighten()`/`.darken()`, also usable directly):
+Two colors can be blended with `.mix()`, which `.lighten()` and `.darken()` also use internally:
 
 ```python
 from codehs_utils import ColorLike
@@ -92,7 +92,7 @@ print(blend.to_hex())
 
 ### Style Methods
 
-`ColorText` and `GradientText` share a set of chainable style methods (from their common `_StyleMixin`), so you can build up a piece of styled text step by step instead of passing everything to the constructor at once:
+`ColorText` and `GradientText` share a set of chainable style methods (from their common `_StyleMixin`). These allow styled text to be built incrementally instead of passing every option to the constructor:
 
 ```python
 from codehs_utils import ColorText
@@ -103,12 +103,12 @@ print(msg)
 ```
 
 Available chainable methods:
-- `.bold()`, `.italic()`, `.underline()`, `.strikethrough()`, `.dim()`, `.blink()`, `.reverse()` — turn on a single style
-- `.add_style(name)` / `.remove_style(name)` — turn a named style on/off
-- `.set_styles(*names)` — replace the whole style list at once
-- `.set_text(text)` — change the wrapped text
-- `.set_background(color)` — set or clear the background color
-- `.set_reset(bool)` — whether an ANSI reset code is appended after the text (default `True`)
+- `.bold()`, `.italic()`, `.underline()`, `.strikethrough()`, `.dim()`, `.blink()`, `.reverse()`: Turn on a single style
+- `.add_style(name)` / `.remove_style(name)`: Turn a named style on or off
+- `.set_styles(*names)`: Replace the whole style list at once
+- `.set_text(text)`: Change the wrapped text
+- `.set_background(color)`: Set or clear the background color
+- `.set_reset(bool)`: Set whether an ANSI reset code is appended after the text (default `True`)
 
 Every method returns `self`, so calls can be chained.
 
@@ -125,7 +125,7 @@ print(line.wrap(20))
 
 ### Slow Printing
 
-`slow_print` reveals text one visible character at a time, typewriter-style. It takes a plain string, or any of `ColorText`/`GradientText`/`StyledText` directly — a gradient keeps the right color at each position as it's typed out, instead of only supporting one flat color:
+`slow_print` reveals text one visible character at a time, like a typewriter. It accepts a plain string or any `ColorText`, `GradientText`, or `StyledText` object. Gradients keep the correct color at each position as the text is printed, rather than being limited to a single flat color:
 
 ```python
 from codehs_utils import slow_print, PrintOptions, GradientText, ColorText
@@ -141,12 +141,12 @@ slow_print(ColorText("Warning!", foreground="red", styles=["bold"]), PrintOption
 ```
 
 `PrintOptions` fields:
-- `speed` — visible characters per second (default `40`)
-- `color` / `background` / `styles` — only used for plain strings; ignored on `ColorText`/`GradientText`/`StyledText`, which already carry their own coloring
-- `end` — printed after the text finishes (default `"\n"`)
-- `newline_delay` — extra pause after each `\n` in the text (default `0.5`)
-- `flush` — flush the stream after every character (default `True`)
-- `stream` — where to write to (default `sys.stdout`)
+- `speed`: Visible characters per second (default `40`)
+- `color` / `background` / `styles`: Applied only to plain strings. Ignored for `ColorText`, `GradientText`, and `StyledText`, which already carry their own coloring
+- `end`: Text printed after the output finishes (default `"\n"`)
+- `newline_delay`: Extra pause after each `\n` in the text (default `0.5`)
+- `flush`: Whether to flush the stream after every character (default `True`)
+- `stream`: Output stream to write to (default `sys.stdout`)
 
 ### Big Text
 
@@ -166,7 +166,7 @@ print(LargeText("HI", format="pixel"))
 print(LargeText("OK", font="3x5"))
 ```
 
-Colors, gradients, and styles work the same way as `ColorText`/`GradientText` — `color`/`colors` paint the glyph strokes, `background`/`background_colors` fill the space around them:
+Colors, gradients, and styles work the same way as in `ColorText` and `GradientText`. The `color` and `colors` parameters set the glyph strokes, and `background` and `background_colors` fill the space around them:
 
 ```python
 print(LargeText("WARNING", color="red", styles=["bold"]))
@@ -174,7 +174,7 @@ print(LargeText("RAINBOW", colors="rainbow", format="pixel"))
 print(LargeText("HYPE", color="white", background="purple"))
 ```
 
-`.wrap(width)` and `.align(width, align=)` work like `StyledText`'s, except wrapping only ever breaks between whole big characters — a single character is never split mid-glyph, so a line can still come out wider than `width` if one character alone doesn't fit:
+`.wrap(width)` and `.align(width, align=)` work like their `StyledText` counterparts, except that wrapping only breaks between whole characters. A single character is never split, so a line can be wider than `width` if one character alone does not fit:
 
 ```python
 big = LargeText("HELLO WORLD", font="3x5", color="cyan")
@@ -182,7 +182,7 @@ print(big.wrap(40))
 print(big.align(60, "center"))
 ```
 
-Both fonts cover the full printable ASCII range (32–126: digits, `A`–`Z`, and punctuation). Letters are case-insensitive — lowercase renders using the uppercase glyph, since these fonts are too small to draw a separate lowercase form. Anything outside that range (like accented letters or emoji) just renders as a blank cell instead of raising. `LargeText.supported_chars(font="5x7")` lists every character a font can render.
+Both fonts cover the full printable ASCII range (32–126: digits, `A`–`Z`, and punctuation). Letters are case-insensitive: lowercase letters render using the uppercase glyphs, because the fonts are too small to draw a separate lowercase form. Characters outside that range, such as accented letters or emoji, render as a blank cell instead of raising an error. `LargeText.supported_chars(font="5x7")` lists every character a font can render.
 
 ### Cursor & Screen Control
 
@@ -221,7 +221,7 @@ enter_alt_screen()
 leave_alt_screen()
 
 # Manually undo everything (hide_cursor, alt screen, mouse tracking, raw
-# mode) in one call — normally you'd just use app() instead
+# mode) in one call. Normally, app() handles this automatically.
 restore_terminal()
 ```
 
@@ -314,7 +314,7 @@ keys = get_keys()
 mouse_event = get_mouse_event(timeout=1)
 ```
 
-Mouse tracking can also be toggled manually, if you're not using `app()`:
+If you are not using `app()`, mouse tracking can be toggled manually:
 
 ```python
 from codehs_utils import enable_mouse_tracking, disable_mouse_tracking
@@ -367,7 +367,7 @@ with app(mouse=True, cursor=False, clear=True, alt_screen=True):
 ## Reference
 
 ### Text Styles
-Passed as `styles=[...]` to `ColorText`/`GradientText`, or via `.bold()`, `.italic()`, etc:
+Passed as `styles=[...]` to `ColorText` or `GradientText`, or set through the style methods such as `.bold()` and `.italic()`:
 - `bold`
 - `dim`
 - `italic`
@@ -378,21 +378,21 @@ Passed as `styles=[...]` to `ColorText`/`GradientText`, or via `.bold()`, `.ital
 
 ### Border Styles
 Passed as `style=` to `Rect.draw_border()`:
-- `single` — `┌─┐ └─┘`
-- `double` — `╔═╗ ╚═╝`
-- `rounded` — `╭─╮ ╰─╯`
-- `heavy` — `┏━┓ ┗━┛`
-- `ascii` — `+-+ +-+`
+- `single`: `┌─┐ └─┘`
+- `double`: `╔═╗ ╚═╝`
+- `rounded`: `╭─╮ ╰─╯`
+- `heavy`: `┏━┓ ┗━┛`
+- `ascii`: `+-+ +-+`
 
 ### Gradient Presets
-Built into `GradientText`, usable by name (e.g. `GradientText.rainbow(...)`):
+Built into `GradientText` and available by name, for example `GradientText.rainbow(...)`:
 - `rainbow`, `fire`, `ocean`, `sunset`, `pastel`, `grayscale`, `neon`, `forest`, `mint`, `gold`
 
 ## API Reference
 
-Every public name is re-exported from the top level (`import codehs_utils as c`), so the module path below is just for grouping — you don't need to import from it directly.
+Every public name is re-exported from the top level (`import codehs_utils as c`). The module names in the headings below are for grouping only. Names do not need to be imported from them directly.
 
-### Colors — `colors`
+### Colors (`colors`)
 
 | Name | Description |
 |---|---|
@@ -433,21 +433,21 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `.wrap(width, collapse_space=True)` | ANSI-aware word wrap of the combined text |
 | `.align(width, align="left", fillchar=None)` | Align the combined text within `width` |
 
-### Text — `text`
+### Text (`text`)
 
 | Name | Description |
 |---|---|
 | `wrap_text(text, width, collapse_space=True, break_long_words=True, preserve_newlines=True)` | ANSI-aware word wrapping |
 | `align_text(text, width, align="left", fillchar=None)` | `"left"`, `"right"`, `"center"`, or `"justify"` alignment |
 
-### Printing — `printing`
+### Printing (`printing`)
 
 | Name | Description |
 |---|---|
 | `slow_print(text, options=None)` | Print `text` one visible character at a time; accepts a plain string or a `ColorText`/`GradientText`/`StyledText` |
 | `PrintOptions(speed=40.0, color=None, background=None, styles=None, end="\n", newline_delay=0.5, flush=True, stream=sys.stdout)` | Settings for `slow_print`; `color`/`background`/`styles` only apply to plain strings |
 
-### Big Text — `bigtext`
+### Big Text (`bigtext`)
 
 | Name | Description |
 |---|---|
@@ -460,7 +460,7 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 
 
 
-### Geometry — `geometry`
+### Geometry (`geometry`)
 
 | Name | Description |
 |---|---|
@@ -470,7 +470,7 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `Rect.fill(color=None, char=" ")` | Fill the rect (wraps `fill_rect`) |
 | `Rect.draw_border(color=None, style="single", background=None)` | Draw a border around the rect |
 
-### Drawing — `drawing`
+### Drawing (`drawing`)
 
 | Name | Description |
 |---|---|
@@ -490,7 +490,7 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `Button.draw()` | (Re)draw the button in its current state |
 | `Button.handle(event)` | Update state from a `MouseEvent`, redraw if needed, fire `on_click`; returns `True` on a completed click |
 
-### Terminal — `terminal`
+### Terminal (`terminal`)
 
 | Name | Description |
 |---|---|
@@ -514,7 +514,7 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `print_at(row, col, text, clear_to_end=False)` | Print (possibly multi-line) text at a position, returns a `Rect` |
 | `restore_terminal()` | Undo cursor/mouse/alt-screen/raw-mode state in one call |
 
-### Output buffering — `_buffer` (re-exported)
+### Output Buffering (`_buffer`, re-exported)
 
 | Name | Description |
 |---|---|
@@ -528,8 +528,8 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 
 ## Examples
 
-The snippets below are quick tastes. For full, runnable scripts, see the
-[`codehs_utils.examples`](#runnable-examples) package described next.
+The snippets below are short examples. For complete, runnable scripts, see the
+[`codehs_utils.examples`](#runnable-examples) package described in the next section.
 
 ### Create a Colorful Banner
 
@@ -569,7 +569,7 @@ print_at(box.row + 2, box.col + 2, "Press any key to continue...")
 
 ### Runnable Examples
 
-The package ships a small `codehs_utils.examples` subpackage with one self-contained script per feature area. Each module exposes a `run()` function, so you can pull one in and run it with a plain import -- no command line needed, which also makes these usable on CodeHS:
+The package includes a `codehs_utils.examples` subpackage with one self-contained script per feature area. Each module exposes a `run()` function, so an example can be run directly after importing it, without using the command line. This also makes the examples usable on CodeHS:
 
 ```python
 from codehs_utils.examples import colors_demo
@@ -577,9 +577,9 @@ from codehs_utils.examples import colors_demo
 colors_demo.run()
 ```
 
-Below is the full source for every example.
+The full source for each example is listed below.
 
-#### `colors_demo` -- Named colors, hex, RGB, mixing, lighten/darken/contrast
+#### `colors_demo`: Named colors, hex, RGB, mixing, lighten/darken/contrast
 
 ```python
 from codehs_utils.examples import colors_demo
@@ -627,7 +627,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `gradients_demo` -- GradientText presets, custom stops, gradient backgrounds
+#### `gradients_demo`: GradientText presets, custom stops, gradient backgrounds
 
 ```python
 from codehs_utils.examples import gradients_demo
@@ -672,7 +672,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `banners_demo` -- banner() boxes, side-by-side layout, and alignment
+#### `banners_demo`: banner() boxes, side-by-side layout, and alignment
 
 ```python
 from codehs_utils.examples import banners_demo
@@ -715,7 +715,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `bigtext_demo` -- LargeText big pixel-font banners, block and half-block styles
+#### `bigtext_demo`: LargeText big pixel-font banners, block and half-block styles
 
 ```python
 from codehs_utils.examples import bigtext_demo
@@ -758,7 +758,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `slow_print_demo` -- Typewriter-style output with slow_print()
+#### `slow_print_demo`: Typewriter-style output with slow_print()
 
 ```python
 from codehs_utils.examples import slow_print_demo
@@ -797,7 +797,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `drawing_demo` -- fill_rect() and the half-block pixel canvas (set_pixel)
+#### `drawing_demo`: fill_rect() and the half-block pixel canvas (set_pixel)
 
 ```python
 from codehs_utils.examples import drawing_demo
@@ -847,7 +847,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `buttons_demo` -- A mouse-driven app with clickable Button widgets
+#### `buttons_demo`: A mouse-driven app with clickable Button widgets
 
 ```python
 from codehs_utils.examples import buttons_demo
@@ -913,7 +913,7 @@ if __name__ == "__main__":
     run()
 ```
 
-#### `keyboard_demo` -- A keyboard-driven app (move a character with arrow keys)
+#### `keyboard_demo`: A keyboard-driven app (move a character with arrow keys)
 
 ```python
 from codehs_utils.examples import keyboard_demo
@@ -966,8 +966,8 @@ if __name__ == "__main__":
 
 ## License
 
-MIT License - see LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. To contribute, please submit a pull request.
