@@ -181,10 +181,12 @@ FONT_5X7: Dict[str, str] = {
 }
 
 # Distinct lowercase for the 5x7 font only (the 3x5 font is too small and
-# folds lowercase to uppercase instead). Rows 0-1 are ascender space (blank
-# for x-height letters); the body sits in rows 2-6. Descenders (g, j, p, q,
-# y) can't drop below the baseline in a 7-row cell, so they are drawn one
-# pixel higher than their non-descender siblings to fit.
+# folds lowercase to uppercase instead). The 5x7 cell is 8 rows tall: rows
+# 0-1 are ascender space, rows 2-6 hold the x-height body with the
+# baseline at row 6, and row 7 is descender space. Only the descenders
+# (g, j, p, q, y) are stored with all 8 rows; every other glyph keeps its
+# 7 rows and is padded with a blank bottom row when looked up (see
+# `_glyph_rows`), so the font keeps its "5x7" name and data.
 FONT_5X7_LOWER: Dict[str, str] = {
     "a": ".....\n.....\n.###.\n....#\n.####\n#...#\n.####",
     "b": "#....\n#....\n####.\n#...#\n#...#\n#...#\n####.",
@@ -192,17 +194,17 @@ FONT_5X7_LOWER: Dict[str, str] = {
     "d": "....#\n....#\n.####\n#...#\n#...#\n#...#\n.####",
     "e": ".....\n.....\n.###.\n#...#\n#####\n#....\n.###.",
     "f": "..##.\n.#..#\n.#...\n###..\n.#...\n.#...\n.#...",
-    "g": ".....\n.####\n#...#\n#...#\n.####\n....#\n.###.",
+    "g": ".....\n.....\n.####\n#...#\n#...#\n.####\n....#\n.###.",
     "h": "#....\n#....\n####.\n#...#\n#...#\n#...#\n#...#",
     "i": "..#..\n.....\n.##..\n..#..\n..#..\n..#..\n.###.",
-    "j": "...#.\n.....\n..##.\n...#.\n...#.\n#..#.\n.##..",
+    "j": "...#.\n.....\n..##.\n...#.\n...#.\n...#.\n#..#.\n.##..",
     "k": "#....\n#....\n#..#.\n#.#..\n##...\n#.#..\n#..#.",
     "l": ".##..\n..#..\n..#..\n..#..\n..#..\n..#..\n.###.",
     "m": ".....\n.....\n##.#.\n#.#.#\n#.#.#\n#...#\n#...#",
     "n": ".....\n.....\n####.\n#...#\n#...#\n#...#\n#...#",
     "o": ".....\n.....\n.###.\n#...#\n#...#\n#...#\n.###.",
-    "p": ".....\n####.\n#...#\n#...#\n####.\n#....\n#....",
-    "q": ".....\n.####\n#...#\n#...#\n.####\n....#\n....#",
+    "p": ".....\n.....\n####.\n#...#\n#...#\n####.\n#....\n#....",
+    "q": ".....\n.....\n.####\n#...#\n#...#\n.####\n....#\n....#",
     "r": ".....\n.....\n#.##.\n##..#\n#....\n#....\n#....",
     "s": ".....\n.....\n.####\n#....\n.###.\n....#\n####.",
     "t": ".#...\n.#...\n###..\n.#...\n.#...\n.#..#\n..##.",
@@ -210,7 +212,7 @@ FONT_5X7_LOWER: Dict[str, str] = {
     "v": ".....\n.....\n#...#\n#...#\n#...#\n.#.#.\n..#..",
     "w": ".....\n.....\n#...#\n#...#\n#.#.#\n#.#.#\n.#.#.",
     "x": ".....\n.....\n#...#\n.#.#.\n..#..\n.#.#.\n#...#",
-    "y": ".....\n#...#\n#...#\n#...#\n.####\n....#\n.###.",
+    "y": ".....\n.....\n#...#\n#...#\n#...#\n.####\n....#\n.###.",
     "z": ".....\n.....\n#####\n...#.\n..#..\n.#...\n#####",
 }
 
@@ -218,7 +220,7 @@ FONT_5X7.update(FONT_5X7_LOWER)
 
 _FONTS: Dict[str, Tuple[int, int, Dict[str, str]]] = {
     "3x5": (3, 5, FONT_3X5),
-    "5x7": (5, 7, FONT_5X7),
+    "5x7": (5, 8, FONT_5X7),
 }
 
 
@@ -230,9 +232,12 @@ def _get_font(name: str) -> Tuple[int, int, Dict[str, str]]:
 
 
 def _validate_font(width: int, height: int, glyphs: Dict[str, str]) -> None:
+    # A glyph may be shorter than the font's cell height (missing bottom rows
+    # are padded blank at lookup time -- see `_glyph_rows`), but never taller,
+    # and every row must be exactly `width` characters of "#"/".".
     for ch, spec in glyphs.items():
         rows = spec.split("\n")
-        if len(rows) != height or any(len(row) != width for row in rows):
+        if not 1 <= len(rows) <= height or any(len(row) != width or set(row) - {"#", "."} for row in rows):
             raise AssertionError(f"Malformed {width}x{height} glyph for {ch!r}: {spec!r}")
 
 
@@ -249,7 +254,12 @@ def _glyph_rows(font_dict: Dict[str, str], height: int, ch: str) -> List[str]:
         spec = font_dict.get(ch.upper())
     if spec is None:
         spec = font_dict[" "]
-    return spec.split("\n")
+    rows = spec.split("\n")
+    # Glyphs may be stored shorter than the cell height (only descenders
+    # need the extra row); pad the bottom with blank rows to fill the cell.
+    if len(rows) < height:
+        rows += ["." * len(rows[0])] * (height - len(rows))
+    return rows
 
 
 def _resolve_gradient(spec: Optional[GradientColors]) -> List[ColorLike]:
