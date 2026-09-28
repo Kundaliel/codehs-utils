@@ -346,6 +346,76 @@ class LargeText:
         _, _, glyphs = _get_font(font)
         return "".join(sorted(ch for ch in glyphs if ch != " "))
 
+    # -- chainable setters (mirror ColorText / GradientText) ------------
+
+    def set_text(self, text: str = ""):
+        self.text = "" if text is None else str(text)
+        return self
+
+    def set_color(self, col: Union[ColorLike, str, tuple, None] = None):
+        """Solid color for the glyph strokes. Pass None to clear it."""
+        self.color = ColorLike(col) if col is not None else None
+        return self
+
+    def set_colors(self, colors: Optional[GradientColors] = None):
+        """Gradient (preset name or list of colors) for the glyph strokes.
+        Pass None to clear it. A gradient takes priority over a solid color."""
+        self.colors = _resolve_gradient(colors)
+        return self
+
+    def set_background(self, col: Union[ColorLike, str, tuple, None] = None):
+        """Solid color for the "off" pixels. Pass None to clear it."""
+        self.background = ColorLike(col) if col is not None else None
+        return self
+
+    def set_background_colors(self, colors: Optional[GradientColors] = None):
+        """Gradient for the "off" pixels. Pass None to clear it."""
+        self.background_colors = _resolve_gradient(colors)
+        return self
+
+    def set_background_gradient(self, colors: Optional[GradientColors] = None):
+        """Alias of `set_background_colors`, matching `GradientText`."""
+        return self.set_background_colors(colors)
+
+    def set_styles(self, *styles: str):
+        if len(styles) == 1 and isinstance(styles[0], (list, tuple)):
+            styles = tuple(styles[0])
+        self.styles = _validate_styles(styles)
+        return self
+
+    def add_style(self, style: str):
+        key = _validate_styles([style])[0]
+        if key not in self.styles:
+            self.styles.append(key)
+        return self
+
+    def remove_style(self, style: str):
+        key = str(style).strip().lower()
+        if key in self.styles:
+            self.styles.remove(key)
+        return self
+
+    def bold(self):
+        return self.add_style("bold")
+
+    def italic(self):
+        return self.add_style("italic")
+
+    def underline(self):
+        return self.add_style("underline")
+
+    def strikethrough(self):
+        return self.add_style("strikethrough")
+
+    def dim(self):
+        return self.add_style("dim")
+
+    def blink(self):
+        return self.add_style("blink")
+
+    def reverse(self):
+        return self.add_style("reverse")
+
     # -- color sampling, by column position across the whole string ----
 
     def _fg_at(self, col: int, total: int) -> Optional[RGB]:

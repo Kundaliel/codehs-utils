@@ -618,6 +618,9 @@ Every public name is re-exported from the top level (`import codehs_utils as c`)
 | `LargeText.wrap(width)` | Wraps at whole-character boundaries only |
 | `LargeText.align(width, align="left", fillchar=None)` | Aligns each rendered row within `width` |
 | `LargeText.draw(row, col)` | Draw at a position (wraps `print_at`) |
+| `LargeText.set_color(color)` / `.set_colors(colors)` | Set (or clear with `None`) the solid / gradient color of the glyph strokes; a gradient wins over a solid color |
+| `LargeText.set_background(color)` / `.set_background_colors(colors)` | Set (or clear with `None`) the solid / gradient color of the off pixels; `.set_background_gradient(colors)` is an alias |
+| `LargeText.set_text(text)` / `.set_styles(*names)` / `.add_style(name)` / `.remove_style(name)` | Same as on `ColorText`; `.bold()`, `.italic()`, `.underline()`, etc. also work. All setters return `self` for chaining |
 | `LargeText.supported_chars(font="5x7")` | Every character the font can render |
 
 
