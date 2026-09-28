@@ -30,8 +30,8 @@ RGB = Tuple[int, int, int]
 # --------------------------------------------------------------------- #
 # Font data: one "#"/"." string per glyph (rows joined by "\n"), covering
 # the full printable ASCII range (32-126: space, digits, punctuation, and
-# A-Z -- lowercase is folded to the same glyph as its uppercase letter,
-# since these fonts are too small to draw distinct lowercase forms).
+# A-Z). The 5x7 font also has distinct lowercase a-z glyphs; the 3x5 font
+# is too small for that, so it folds lowercase to the uppercase glyph.
 # Characters outside 32-126 fall back to a blank (space-width) glyph
 # rather than raising, so stray unicode never crashes a render.
 # --------------------------------------------------------------------- #
@@ -180,6 +180,42 @@ FONT_5X7: Dict[str, str] = {
     "~": ".....\n.....\n.#...\n#.#.#\n...#.\n.....\n.....",
 }
 
+# Distinct lowercase for the 5x7 font only (the 3x5 font is too small and
+# folds lowercase to uppercase instead). Rows 0-1 are ascender space (blank
+# for x-height letters); the body sits in rows 2-6. Descenders (g, j, p, q,
+# y) can't drop below the baseline in a 7-row cell, so they are drawn one
+# pixel higher than their non-descender siblings to fit.
+FONT_5X7_LOWER: Dict[str, str] = {
+    "a": ".....\n.....\n.###.\n....#\n.####\n#...#\n.####",
+    "b": "#....\n#....\n####.\n#...#\n#...#\n#...#\n####.",
+    "c": ".....\n.....\n.###.\n#....\n#....\n#...#\n.###.",
+    "d": "....#\n....#\n.####\n#...#\n#...#\n#...#\n.####",
+    "e": ".....\n.....\n.###.\n#...#\n#####\n#....\n.###.",
+    "f": "..##.\n.#..#\n.#...\n###..\n.#...\n.#...\n.#...",
+    "g": ".....\n.####\n#...#\n#...#\n.####\n....#\n.###.",
+    "h": "#....\n#....\n####.\n#...#\n#...#\n#...#\n#...#",
+    "i": "..#..\n.....\n.##..\n..#..\n..#..\n..#..\n.###.",
+    "j": "...#.\n.....\n..##.\n...#.\n...#.\n#..#.\n.##..",
+    "k": "#....\n#....\n#..#.\n#.#..\n##...\n#.#..\n#..#.",
+    "l": ".##..\n..#..\n..#..\n..#..\n..#..\n..#..\n.###.",
+    "m": ".....\n.....\n##.#.\n#.#.#\n#.#.#\n#...#\n#...#",
+    "n": ".....\n.....\n####.\n#...#\n#...#\n#...#\n#...#",
+    "o": ".....\n.....\n.###.\n#...#\n#...#\n#...#\n.###.",
+    "p": ".....\n####.\n#...#\n#...#\n####.\n#....\n#....",
+    "q": ".....\n.####\n#...#\n#...#\n.####\n....#\n....#",
+    "r": ".....\n.....\n#.##.\n##..#\n#....\n#....\n#....",
+    "s": ".....\n.....\n.####\n#....\n.###.\n....#\n####.",
+    "t": ".#...\n.#...\n###..\n.#...\n.#...\n.#..#\n..##.",
+    "u": ".....\n.....\n#...#\n#...#\n#...#\n#..##\n.##.#",
+    "v": ".....\n.....\n#...#\n#...#\n#...#\n.#.#.\n..#..",
+    "w": ".....\n.....\n#...#\n#...#\n#.#.#\n#.#.#\n.#.#.",
+    "x": ".....\n.....\n#...#\n.#.#.\n..#..\n.#.#.\n#...#",
+    "y": ".....\n#...#\n#...#\n#...#\n.####\n....#\n.###.",
+    "z": ".....\n.....\n#####\n...#.\n..#..\n.#...\n#####",
+}
+
+FONT_5X7.update(FONT_5X7_LOWER)
+
 _FONTS: Dict[str, Tuple[int, int, Dict[str, str]]] = {
     "3x5": (3, 5, FONT_3X5),
     "5x7": (5, 7, FONT_5X7),
@@ -206,7 +242,11 @@ del _w, _h, _glyphs
 
 
 def _glyph_rows(font_dict: Dict[str, str], height: int, ch: str) -> List[str]:
-    spec = font_dict.get(ch.upper())
+    # Exact match first (so a font with real lowercase uses it); otherwise
+    # fold to uppercase (the 3x5 font has no lowercase); otherwise blank.
+    spec = font_dict.get(ch)
+    if spec is None:
+        spec = font_dict.get(ch.upper())
     if spec is None:
         spec = font_dict[" "]
     return spec.split("\n")
@@ -248,9 +288,9 @@ class LargeText:
     box, like a highlighted banner. Any of the four may be a single color
     or a gradient (a preset name like `"rainbow"`, or a list of colors).
 
-    Covers the full printable ASCII range (32-126). Letters are
-    case-insensitive -- lowercase renders using the uppercase glyph, since
-    these fonts are too small to draw a distinct lowercase form. Any other
+    Covers the full printable ASCII range (32-126). The 5x7 font has
+    distinct lowercase letters; the 3x5 font is too small for that, so
+    lowercase there renders using the uppercase glyph. Any other
     character renders as a blank cell instead of raising -- use
     `LargeText.supported_chars()` to see the full set.
     """
@@ -290,8 +330,9 @@ class LargeText:
 
     @classmethod
     def supported_chars(cls, font: str = "5x7") -> str:
-        """Every character (besides space) this font can render. Letters
-        are case-insensitive, so only the uppercase form is listed."""
+        """Every character (besides space) this font can render. The 5x7
+        font has distinct lowercase glyphs; the 3x5 font folds lowercase
+        to uppercase, so only uppercase letters are listed for it."""
         _, _, glyphs = _get_font(font)
         return "".join(sorted(ch for ch in glyphs if ch != " "))
 
