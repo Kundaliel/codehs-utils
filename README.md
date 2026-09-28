@@ -32,12 +32,17 @@ import codehs_utils as c
 # Colorful banner
 print(c.banner("Hello, World!", color="white", background="blue"))
 
-# Interactive app with mouse support
+# Run a seperate program without clearing the previously drawn banner
 with c.app(mouse=True):
-    c.banner("Click anywhere, press ESC to quit").draw(1, 1)
+    c.banner("Click anywhere to place a character, waiting 5 seconds or pressing escape will exit").draw(1, 1)
     for event in c.events(timeout=5):
+        if isinstance(event, c.MouseEvent) and event.type == 'press':
+            x, y = event.x, event.y
+            c.print_at(y, x, "|")
+            
         if event is None or (event.kind == "key" and event.key == "ESC"):
             break
+
 ```
 
 ## Documentation
@@ -153,14 +158,18 @@ slow_print(ColorText("Warning!", foreground="red", styles=["bold"]), PrintOption
 `LargeText` renders multi-row "banner" text from a small pixel font, in one of two styles:
 
 ```python
-from codehs_utils import LargeText
+from codehs_utils import LargeText, write
 
 # "block" (default): each font pixel becomes 2 terminal characters wide
 print(LargeText("HI"))
 
+write('\n')
+
 # "pixel": packs 2 font rows per terminal row using half-block characters,
 # so it comes out roughly half as tall for the same size
 print(LargeText("HI", format="pixel"))
+
+write('\n')
 
 # Two font sizes: "5x7" (default, more detail) or "3x5" (compact)
 print(LargeText("OK", font="3x5"))
@@ -194,35 +203,182 @@ from codehs_utils import (
     enter_alt_screen, leave_alt_screen, restore_terminal,
 )
 
+import time
+
+
+def pause(seconds=1.5):
+    time.sleep(seconds)
+
+
+def title(text):
+    """Show a step title at the top of the screen."""
+    clear_screen()
+    set_cursor_pos(1, 1)
+    print(f"=== {text} ===")
+
+
+# ---------------------------------------------------------------
 # Clear the screen, or just the current line
+# ---------------------------------------------------------------
+title("clear_screen()")
+print("This text is about to disappear...")
+pause()
 clear_screen()
-clear_line(mode="to_end")  # "full", "to_end", or "to_start"
+set_cursor_pos(1, 1)
+print("Screen cleared!")
+pause()
 
+title("clear_line()")
+set_cursor_pos(3, 1)
+print("Line A: this line stays untouched")
+print("Line B: the cursor will sit in the middle of this line")
+print("Line C: this line stays untouched")
+pause()
+
+set_cursor_pos(4, 20)
+print("<-- cursor here", end="", flush=True)
+pause()
+
+set_cursor_pos(4, 20)
+clear_line(mode="to_end")
+print("[to_end wiped everything to the right]", end="", flush=True)
+pause()
+
+set_cursor_pos(4, 20)
+clear_line(mode="to_start")
+set_cursor_pos(4, 1)
+print("[to_start wiped everything to the left]", end="", flush=True)
+pause()
+
+clear_line(mode="full")
+set_cursor_pos(4, 1)
+print("[full wiped the whole line, then I typed this]", end="", flush=True)
+pause(2)
+
+# ---------------------------------------------------------------
 # Move the cursor
-set_cursor_pos(10, 5)   # absolute: row 10, column 5
-set_cursor_row(10)
-set_cursor_col(5)
-move_cursor(dx=2, dy=-1)  # relative
+# ---------------------------------------------------------------
+title("set_cursor_pos(row, col)")
+set_cursor_pos(10, 5)
+print("X  <- printed at row 10, column 5", end="", flush=True)
+pause()
 
-# Save/restore cursor position
+set_cursor_pos(3, 30)
+print("Y  <- printed at row 3, column 30", end="", flush=True)
+pause()
+
+title("set_cursor_row() / set_cursor_col()")
+set_cursor_pos(5, 1)
+print("Starting on row 5", end="", flush=True)
+pause()
+set_cursor_row(8)
+print("Jumped to row 8 (column kept)", end="", flush=True)
+pause()
+set_cursor_col(40)
+print("Jumped to column 40", end="", flush=True)
+pause(2)
+
+title("move_cursor(dx, dy)  (relative)")
+set_cursor_pos(10, 20)
+print("O", end="", flush=True)  # start marker
+pause(1)
+# Trace a small path with relative moves
+steps = [(2, 0), (2, 0), (0, 1), (0, 1), (-2, 0), (-2, 0), (0, -1)]
+for dx, dy in steps:
+    move_cursor(dx=dx, dy=dy)
+    print("*", end="", flush=True)
+    pause(0.4)
+pause(1.5)
+
+# ---------------------------------------------------------------
+# Save / restore cursor position
+# ---------------------------------------------------------------
+title("save_cursor_position() / restore_cursor_position()")
+set_cursor_pos(5, 10)
+print("Saving position here -> ", end="", flush=True)
 save_cursor_position()
+pause()
+
+set_cursor_pos(12, 10)
+print("Wandered off to row 12...", end="", flush=True)
+pause()
+
 restore_cursor_position()
+print("[back at the saved spot!]", end="", flush=True)
+pause(2)
 
-# Hide/show the cursor
+# ---------------------------------------------------------------
+# Hide / show the cursor
+# ---------------------------------------------------------------
+title("hide_cursor() / show_cursor()")
+set_cursor_pos(4, 1)
+print("Cursor is visible now (look for the blinking block).")
+pause(2)
+
 hide_cursor()
-show_cursor()
+set_cursor_pos(6, 1)
+print("Cursor is now HIDDEN.")
+pause(2)
 
+show_cursor()
+set_cursor_pos(8, 1)
+print("Cursor is visible again.")
+pause(2)
+
+# ---------------------------------------------------------------
 # Read back state
+# ---------------------------------------------------------------
+title("get_cursor_position() / get_terminal_size()")
+set_cursor_pos(7, 15)
 row, col = get_cursor_position()
 width, height = get_terminal_size()
 
-# The alternate screen buffer (used internally by app())
-enter_alt_screen()
-leave_alt_screen()
+set_cursor_pos(3, 1)
+print(f"I moved the cursor to (7, 15) and it reports: row={row}, col={col}")
+print(f"Terminal size: width={width}, height={height}")
+pause(3)
 
-# Manually undo everything (hide_cursor, alt screen, mouse tracking, raw
-# mode) in one call. Normally, app() handles this automatically.
+# ---------------------------------------------------------------
+# The alternate screen buffer
+# ---------------------------------------------------------------
+title("Before entering the alternate screen")
+set_cursor_pos(3, 1)
+print("This is the NORMAL screen. Watch it get swapped out...")
+pause(2)
+
+enter_alt_screen()
+clear_screen()
+set_cursor_pos(1, 1)
+print("=== ALTERNATE SCREEN ===")
+print("This is a totally separate buffer.")
+print("Your normal screen content is hidden, not erased.")
+pause(3)
+
+leave_alt_screen()
+set_cursor_pos(5, 1)
+print("Back on the normal screen. The earlier text is still here!")
+pause(3)
+
+# ---------------------------------------------------------------
+# Restore the terminal
+# ---------------------------------------------------------------
+title("restore_terminal()")
+set_cursor_pos(3, 1)
+print("Hiding the cursor and entering the alt screen...")
+hide_cursor()
+enter_alt_screen()
+pause(1.5)
+
+set_cursor_pos(1, 1)
+print("Now in alt screen with the cursor hidden.")
+print("Calling restore_terminal() in 2 seconds...")
+pause(2)
+
 restore_terminal()
+print("Everything restored: cursor visible, normal screen back.")
+pause(2)
+
+print("Demo complete!")
 ```
 
 Lower-level output helpers, used internally but available directly:
@@ -231,11 +387,13 @@ Lower-level output helpers, used internally but available directly:
 from codehs_utils import write, frame
 
 write("some text")  # like print(), but no trailing newline and no `sep`
+write(", same line\n")
 
 # Batch several writes into one flush, avoiding flicker/tearing
 with frame():
     write("line one\n")
     write("line two\n")
+
 ```
 
 ### Text Formatting
@@ -279,7 +437,10 @@ print(b.align(width=40, align="right"))
 ### Rectangles & Pixels
 
 ```python
-from codehs_utils import Rect, fill_rect, set_pixel, get_pixel_size
+from codehs_utils import Rect, fill_rect, set_pixel, get_pixel_size, clear_screen
+
+# Clear the screen before printing
+clear_screen()
 
 # Fill a rectangle
 rect = fill_rect(row=1, col=1, width=10, height=3, color="blue")
@@ -289,7 +450,8 @@ rect.draw_border(color="cyan", style="double")
 
 # Half-block pixel canvas
 width, height = get_pixel_size()
-set_pixel(x=5, y=5, color="red")
+set_pixel(x=10, y=10, color="red")
+
 ```
 
 ### Keyboard & Mouse Input
@@ -345,7 +507,7 @@ GradientText.preview_presets()
 from codehs_utils import Button, app, events
 
 with app(mouse=True):
-    button = Button("Click me", row=2, col=2, on_click=lambda: print("Clicked!"))
+    button = Button("Click me", row=2, col=2, on_click=lambda: print("\nClicked!"))
     button.draw()
     for event in events(timeout=10):
         if event is None:
@@ -546,25 +708,60 @@ print(GradientText.rainbow("=" * 50))
 ### Simple Paint Program
 
 ```python
-from codehs_utils import app, events, set_pixel
+from codehs_utils import app, print_at, events, ColorText, get_terminal_size, fill_rect
+PALETTE = ['white', 'black', 'gray', 'red', 'mistyrose',
+           'green', 'blue', 'orange', 'yellow', 'purple']
+width, height = get_terminal_size()
+
+def clear():
+    fill_rect(0, 0, width, height, 'white')
+    fill_rect(1, width - 1, 2, 1, color)
+
+def change_color(n):
+    color = PALETTE[n]
+    fill_rect(1, width - 1, 2, 1, color)
+    return color
+    
+
+held = False
 
 with app(mouse=True):
-    for event in events(timeout=None):
-        if event is None or (event.kind == "key" and event.key == "ESC"):
+    color = PALETTE[1]
+    clear()
+    for event in events():
+        if event == "q":
             break
-        if event.kind == "mouse" and event.button == "left":
-            set_pixel(event.x, event.y, "red")
+
+        if event.kind == 'key':
+            if len(event.key) == 1 and '0' <= event.key <= '9':
+                color = change_color(int(event.key))
+            if event.key == 'c':
+                clear()
+
+        elif event.kind == 'mouse':
+            if event.button == 'left':
+                if event.type == 'press':
+                    held = True
+                elif event.type == 'release':
+                    held = False
+            if held and not event.type.startswith('wheel'):
+                col = (event.x - 1) // 2 * 2 + 1
+                fill_rect(event.y, col, 2, 1, color)
 ```
 
 ### Bordered Dialog Box
 
 ```python
-from codehs_utils import Rect, print_at
+from codehs_utils import Rect, print_at, ColorLike, ColorText
 
-box = Rect(row=3, col=5, width=30, height=6)
-box.fill(color="black")
-box.draw_border(color="white", style="rounded")
-print_at(box.row + 2, box.col + 2, "Press any key to continue...")
+background = ColorLike('black')
+color = background.contrast()
+message = ColorText("Press any key to continue...", color, background)
+
+box = Rect(row=3, col=5, width=len(message)+4, height=5)
+box.fill(color=background)
+box.draw_border(color=color, background=background)
+print_at(box.row + 2, box.col + 2, message)
 ```
 
 ### Runnable Examples
