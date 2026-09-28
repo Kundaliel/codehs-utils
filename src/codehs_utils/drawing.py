@@ -247,7 +247,11 @@ def _draw_pixel_cell(x: int, row: int):
         else:
             glyph = ColorText("\u2584", bottom, top)
     elif top:
-        glyph = ColorText("\u2580", top)
+        # The upper-half block renders slightly short in some fonts, so build
+        # the top half from a lower-half block in reverse video: the cell
+        # background becomes `top` and the glyph takes the terminal's default
+        # background color.
+        glyph = ColorText("\u2584", top, styles=["reverse"])
     elif bottom:
         glyph = ColorText("\u2584", bottom)
     else:

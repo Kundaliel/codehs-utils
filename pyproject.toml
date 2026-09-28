@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "codehs-utils"
-version = "1.2.3.2"
+version = "1.2.3.3"
 description = "A small terminal toolkit: colors, gradients, banners, keyboard/mouse input, and drawing for CodeHS-style Python environments."
 readme = "README.md"
 requires-python = ">=3.8"

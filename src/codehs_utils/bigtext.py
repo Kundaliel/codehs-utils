@@ -23,7 +23,6 @@ from .colors import (
 )
 from .text import align_text
 
-_UPPER_HALF = "\u2580"  # ▀
 _LOWER_HALF = "\u2584"  # ▄
 
 RGB = Tuple[int, int, int]
@@ -371,7 +370,14 @@ class LargeText:
                     parts.append(self._solid(1, fg))
                 elif top_on:
                     b = bg if bottom_real else None
-                    parts.append(str(ColorText(_UPPER_HALF, foreground=fg, background=b, styles=self.styles)))
+                    # The upper-half block renders slightly short in some
+                    # fonts, so draw the top half with a lower-half block in
+                    # reverse video: the cell background becomes `fg` and the
+                    # glyph takes `b` (or the terminal's default background).
+                    styles = list(self.styles)
+                    if "reverse" not in styles:
+                        styles.append("reverse")
+                    parts.append(str(ColorText(_LOWER_HALF, foreground=fg, background=b, styles=styles)))
                 elif bottom_on:
                     parts.append(str(ColorText(_LOWER_HALF, foreground=fg, background=bg, styles=self.styles)))
                 elif bg is not None:
