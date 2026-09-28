@@ -1,9 +1,4 @@
-"""Output write buffering: batches writes made inside a `frame()` block into
-a single flush to stdout, so multi-line draws don't tear or flicker.
 
-A private implementation detail of :mod:`codehs_utils`, used by
-:mod:`codehs_utils.terminal` and :mod:`codehs_utils.geometry`.
-"""
 
 import sys
 import contextlib

@@ -1,9 +1,4 @@
-"""Low-level terminal control: cursor movement, screen clearing, the
-alternate screen, keyboard/mouse input, terminal size, and `print_at`/`app`.
 
-Raw terminal mode and signal decoding are handled here; Windows-specific
-console API calls live in `._platform` and are used internally.
-"""
 
 import os
 import sys

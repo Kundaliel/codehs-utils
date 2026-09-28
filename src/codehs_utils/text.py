@@ -1,10 +1,4 @@
-"""ANSI-aware text measurement, wrapping, and alignment.
 
-These helpers treat ANSI SGR escape codes as zero-width, and measure
-wide (e.g. CJK) characters as width 2, so wrapping/alignment stays correct
-on styled or gradient text. Has no dependency on any other module in this
-package, since almost every other module depends on it.
-"""
 
 import re
 import unicodedata
@@ -50,8 +44,6 @@ def _visible_len(s: str) -> int:
         total += _text_width(s[pos:m.start()])
         digits, letter = m.group(1), m.group(2)
         if letter == "C":
-            # cursor-forward: doesn't print anything, but does occupy
-            # that many columns on screen, unlike a zero-width SGR code.
             total += int(digits) if digits else 1
         pos = m.end()
     total += _text_width(s[pos:])
@@ -181,12 +173,7 @@ def wrap_text(text, width, collapse_space=True, break_long_words=True, preserve_
 
 
 def _pad(n: int, fillchar) -> str:
-    """Return padding of length n. If fillchar is None (the default),
-    use an ANSI cursor-forward escape instead of printing anything, so
-    the padded area doesn't overwrite/clear whatever is already on
-    screen there. Any actual character (including " ") is printed
-    literally, which is what you want when the padding needs to carry
-    a background color, e.g. inside a banner."""
+
     if n <= 0:
         return ""
     if fillchar is None:

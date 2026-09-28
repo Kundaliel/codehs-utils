@@ -1,10 +1,4 @@
-"""RGB colors, ANSI styles, and styled/gradient text.
 
-`ColorLike` parses names/hex/RGB tuples into a normalized RGB color.
-`ColorText` and `GradientText` render styled strings (solid or gradient
-foreground/background, bold/italic/etc.) as ANSI escape sequences.
-`StyledText` concatenates pieces of any of the above.
-"""
 
 import json
 import gzip
@@ -60,9 +54,6 @@ class ColorLike:
 
     @staticmethod
     def print_samples():
-        # Imported lazily to avoid a circular import: .terminal and .drawing
-        # both import from this module at load time, so this module can't
-        # import them back at load time too.
         from .terminal import get_terminal_size
         from .drawing import banner
         width = get_terminal_size()[0]

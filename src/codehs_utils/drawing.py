@@ -1,7 +1,4 @@
-"""Higher-level drawing built on top of `.terminal` and `.colors`: text
-banners/boxes, filled rectangles, a half-block pixel canvas, and clickable
-buttons.
-"""
+
 
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
@@ -120,7 +117,7 @@ class BannerRow:
         if not self.banners:
             return ""
         if fillchar is None:
-            fillchar = " "  # banners are solid blocks: pad with real spaces
+            fillchar = " "
         gaps = [self.gap] * (len(self.banners) - 1)
         pad = max(0, width - self.width)
         left = right = 0
@@ -187,7 +184,6 @@ def banner(
     if width is None:
         width = _calculate_box_width(text)
     padding = max(0, padding)
-    # Banners need real spaces (not cursor moves) so the background color fills the box.
     line = align_text(text, width, align=align, fillchar=" ")
     blank = " " * width
 
@@ -241,16 +237,10 @@ def _draw_pixel_cell(x: int, row: int):
     bottom = _pixel_buf.get((x, 2 * row))
     if top and bottom:
         if top == bottom:
-            # Same color on both halves: a background-colored space fills the
-            # whole cell with no glyph (and no seams).
             glyph = ColorText(" ", background=top)
         else:
             glyph = ColorText("\u2584", bottom, top)
     elif top:
-        # The upper-half block renders slightly short in some fonts, so build
-        # the top half from a lower-half block in reverse video: the cell
-        # background becomes `top` and the glyph takes the terminal's default
-        # background color.
         glyph = ColorText("\u2584", top, styles=["reverse"])
     elif bottom:
         glyph = ColorText("\u2584", bottom)

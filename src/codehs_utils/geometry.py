@@ -1,6 +1,4 @@
-"""The `Rect` type: a plain (row, col, width, height) rectangle returned by
-drawing functions, with `.fill()` and `.draw_border()` convenience methods.
-"""
+
 
 from typing import NamedTuple
 
@@ -33,16 +31,11 @@ class Rect(NamedTuple):
         return self.col <= x < self.col + self.width and self.row <= y < self.row + self.height
 
     def fill(self, color=None, char: str = " "):
-        # Imported lazily to avoid a circular import: .drawing imports Rect
-        # from this module at load time, so this module can't import
-        # .drawing back at load time too.
         from .drawing import fill_rect
         fill_rect(self.row, self.col, self.width, self.height, color, char)
         return self
 
     def draw_border(self, color=None, style: str = "single", background=None):
-        # Imported lazily for the same reason as in .fill() above: .colors,
-        # .terminal, and .drawing all end up depending on this module.
         from .colors import ColorText
         from .terminal import print_at
         from .drawing import _BORDER_STYLES

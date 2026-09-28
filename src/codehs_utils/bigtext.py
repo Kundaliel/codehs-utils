@@ -1,19 +1,4 @@
-"""Big, multi-row "banner" text rendered from a small pixel font (3x5 or
-5x7), with the same color/gradient/style support as `ColorText` and
-`GradientText`.
 
-Two render formats:
-  - "block" (default): each font pixel becomes `cell_width` (default 2)
-    terminal characters wide, one terminal row per font row. Simple,
-    chunky, and works everywhere.
-  - "pixel": packs two font rows into a single terminal row using
-    half-block characters -- the same trick the half-block pixel canvas
-    (`set_pixel`) uses -- so the result comes out roughly half as tall
-    for the same size, with squarer-looking pixels.
-
-Font glyphs are stored as one flat "#"/"." string per character (rows
-joined with "\\n") rather than nested lists, to keep this file small.
-"""
 
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
@@ -23,18 +8,10 @@ from .colors import (
 )
 from .text import align_text
 
-_LOWER_HALF = "\u2584"  # ▄
+_LOWER_HALF = "\u2584"
 
 RGB = Tuple[int, int, int]
 
-# --------------------------------------------------------------------- #
-# Font data: one "#"/"." string per glyph (rows joined by "\n"), covering
-# the full printable ASCII range (32-126: space, digits, punctuation, and
-# A-Z). The 5x7 font also has distinct lowercase a-z glyphs; the 3x5 font
-# is too small for that, so it folds lowercase to the uppercase glyph.
-# Characters outside 32-126 fall back to a blank (space-width) glyph
-# rather than raising, so stray unicode never crashes a render.
-# --------------------------------------------------------------------- #
 
 FONT_3X5: Dict[str, str] = {
     " ": "...\n...\n...\n...\n...",
@@ -83,7 +60,7 @@ FONT_3X5: Dict[str, str] = {
     "-": "...\n...\n###\n...\n...",
     "+": "...\n.#.\n###\n.#.\n...",
     "=": "...\n###\n...\n###\n...",
-    '"': "#.#\n#.#\n...\n...\n...",
+    '"': "
     "#": "#.#\n###\n#.#\n###\n#.#",
     "$": ".#.\n##.\n.#.\n.##\n.#.",
     "%": "#.#\n..#\n.#.\n#..\n#.#",
@@ -97,7 +74,7 @@ FONT_3X5: Dict[str, str] = {
     ">": "#..\n.#.\n..#\n.#.\n#..",
     "@": ".#.\n#.#\n#.#\n#..\n.##",
     "[": "##.\n#..\n#..\n#..\n##.",
-    "\\": "#..\n#..\n.#.\n..#\n..#",
+    "\\": "
     "]": ".##\n..#\n..#\n..#\n.##",
     "^": ".#.\n#.#\n...\n...\n...",
     "_": "...\n...\n...\n...\n###",
@@ -155,7 +132,7 @@ FONT_5X7: Dict[str, str] = {
     "-": ".....\n.....\n.....\n#####\n.....\n.....\n.....",
     "+": ".....\n..#..\n..#..\n#####\n..#..\n..#..\n.....",
     "=": ".....\n.....\n#####\n.....\n#####\n.....\n.....",
-    '"': "#.#..\n#.#..\n.....\n.....\n.....\n.....\n.....",
+    '"': "
     "#": ".#.#.\n.#.#.\n#####\n.#.#.\n#####\n.#.#.\n.#.#.",
     "$": "..#..\n.####\n#.#..\n.###.\n..#.#\n####.\n..#..",
     "%": "##..#\n##.#.\n...#.\n..#..\n.#...\n.#.##\n#..##",
@@ -169,7 +146,7 @@ FONT_5X7: Dict[str, str] = {
     ">": ".#...\n..#..\n...#.\n....#\n...#.\n..#..\n.#...",
     "@": ".###.\n#...#\n#.###\n#.#.#\n#.###\n#....\n.####",
     "[": ".###.\n.#...\n.#...\n.#...\n.#...\n.#...\n.###.",
-    "\\": "#....\n.#...\n..#..\n..#..\n..#..\n...#.\n....#",
+    "\\": "
     "]": ".###.\n...#.\n...#.\n...#.\n...#.\n...#.\n.###.",
     "^": "..#..\n.#.#.\n#...#\n.....\n.....\n.....\n.....",
     "_": ".....\n.....\n.....\n.....\n.....\n.....\n#####",
@@ -180,13 +157,6 @@ FONT_5X7: Dict[str, str] = {
     "~": ".....\n.....\n.#...\n#.#.#\n...#.\n.....\n.....",
 }
 
-# Distinct lowercase for the 5x7 font only (the 3x5 font is too small and
-# folds lowercase to uppercase instead). The 5x7 cell is 8 rows tall: rows
-# 0-1 are ascender space, rows 2-6 hold the x-height body with the
-# baseline at row 6, and row 7 is descender space. Only the descenders
-# (g, j, p, q, y) are stored with all 8 rows; every other glyph keeps its
-# 7 rows and is padded with a blank bottom row when looked up (see
-# `_glyph_rows`), so the font keeps its "5x7" name and data.
 FONT_5X7_LOWER: Dict[str, str] = {
     "a": ".....\n.....\n.###.\n....#\n.####\n#...#\n.####",
     "b": "#....\n#....\n####.\n#...#\n#...#\n#...#\n####.",
@@ -232,9 +202,6 @@ def _get_font(name: str) -> Tuple[int, int, Dict[str, str]]:
 
 
 def _validate_font(width: int, height: int, glyphs: Dict[str, str]) -> None:
-    # A glyph may be shorter than the font's cell height (missing bottom rows
-    # are padded blank at lookup time -- see `_glyph_rows`), but never taller,
-    # and every row must be exactly `width` characters of "#"/".".
     for ch, spec in glyphs.items():
         rows = spec.split("\n")
         if not 1 <= len(rows) <= height or any(len(row) != width or set(row) - {"#", "."} for row in rows):
@@ -247,16 +214,12 @@ del _w, _h, _glyphs
 
 
 def _glyph_rows(font_dict: Dict[str, str], height: int, ch: str) -> List[str]:
-    # Exact match first (so a font with real lowercase uses it); otherwise
-    # fold to uppercase (the 3x5 font has no lowercase); otherwise blank.
     spec = font_dict.get(ch)
     if spec is None:
         spec = font_dict.get(ch.upper())
     if spec is None:
         spec = font_dict[" "]
     rows = spec.split("\n")
-    # Glyphs may be stored shorter than the cell height (only descenders
-    # need the extra row); pad the bottom with blank rows to fill the cell.
     if len(rows) < height:
         rows += ["." * len(rows[0])] * (height - len(rows))
     return rows
@@ -265,8 +228,6 @@ def _glyph_rows(font_dict: Dict[str, str], height: int, ch: str) -> List[str]:
 def _resolve_gradient(spec: Optional[GradientColors]) -> List[ColorLike]:
     if not spec:
         return []
-    # Reuses GradientText's own preset table/parsing (rainbow, fire, ...)
-    # instead of duplicating it here.
     return GradientText()._resolve_colors(spec)
 
 
@@ -287,23 +248,7 @@ def _lerp_color(colors: List[ColorLike], t: float) -> RGB:
 
 
 class LargeText:
-    """Big, multi-row text rendered from a pixel font.
 
-        >>> print(LargeText("HI"))
-        >>> print(LargeText("HI", font="3x5", format="pixel", colors="rainbow"))
-        >>> print(LargeText("WARN", color="red", styles=["bold"]).align(40, "center"))
-
-    `color`/`colors` paint the "on" pixels (the glyph strokes); `background`/
-    `background_colors` fill the "off" pixels within the text's bounding
-    box, like a highlighted banner. Any of the four may be a single color
-    or a gradient (a preset name like `"rainbow"`, or a list of colors).
-
-    Covers the full printable ASCII range (32-126). The 5x7 font has
-    distinct lowercase letters; the 3x5 font is too small for that, so
-    lowercase there renders using the uppercase glyph. Any other
-    character renders as a blank cell instead of raising -- use
-    `LargeText.supported_chars()` to see the full set.
-    """
 
     FORMATS = ("block", "pixel")
 
@@ -340,41 +285,37 @@ class LargeText:
 
     @classmethod
     def supported_chars(cls, font: str = "5x7") -> str:
-        """Every character (besides space) this font can render. The 5x7
-        font has distinct lowercase glyphs; the 3x5 font folds lowercase
-        to uppercase, so only uppercase letters are listed for it."""
+
         _, _, glyphs = _get_font(font)
         return "".join(sorted(ch for ch in glyphs if ch != " "))
 
-    # -- chainable setters (mirror ColorText / GradientText) ------------
 
     def set_text(self, text: str = ""):
         self.text = "" if text is None else str(text)
         return self
 
     def set_color(self, col: Union[ColorLike, str, tuple, None] = None):
-        """Solid color for the glyph strokes. Pass None to clear it."""
+
         self.color = ColorLike(col) if col is not None else None
         return self
 
     def set_colors(self, colors: Optional[GradientColors] = None):
-        """Gradient (preset name or list of colors) for the glyph strokes.
-        Pass None to clear it. A gradient takes priority over a solid color."""
+
         self.colors = _resolve_gradient(colors)
         return self
 
     def set_background(self, col: Union[ColorLike, str, tuple, None] = None):
-        """Solid color for the "off" pixels. Pass None to clear it."""
+
         self.background = ColorLike(col) if col is not None else None
         return self
 
     def set_background_colors(self, colors: Optional[GradientColors] = None):
-        """Gradient for the "off" pixels. Pass None to clear it."""
+
         self.background_colors = _resolve_gradient(colors)
         return self
 
     def set_background_gradient(self, colors: Optional[GradientColors] = None):
-        """Alias of `set_background_colors`, matching `GradientText`."""
+
         return self.set_background_colors(colors)
 
     def set_styles(self, *styles: str):
@@ -416,7 +357,6 @@ class LargeText:
     def reverse(self):
         return self.add_style("reverse")
 
-    # -- color sampling, by column position across the whole string ----
 
     def _fg_at(self, col: int, total: int) -> Optional[RGB]:
         if self.colors:
@@ -430,11 +370,9 @@ class LargeText:
             return _lerp_color(self.background_colors, t)
         return self.background.rgb if self.background is not None else None
 
-    # -- glyph assembly --------------------------------------------------
 
     def _grid(self) -> List[List[bool]]:
-        """The on/off pixel grid for the whole string: one bool list per
-        font row, `self._glyph_h` rows total."""
+
         rows: List[List[bool]] = [[] for _ in range(self._glyph_h)]
         for i, ch in enumerate(self.text):
             if i > 0 and self.spacing:
@@ -445,13 +383,9 @@ class LargeText:
                 r.extend(c == "#" for c in glyph_row)
         return rows
 
-    # -- rendering ---------------------------------------------------------
 
     def _solid(self, width: int, fg: Optional[RGB]) -> str:
-        """A solid cell: spaces with the color as their *background*, rather
-        than a full-block glyph, so cells fill their whole row height with no
-        seams (block glyphs often leave gaps between rows in terminal fonts).
-        With no color set, reverse video paints it in the default text color."""
+
         if fg is None:
             styles = list(self.styles) + ["reverse"]
             return str(ColorText(" " * width, styles=styles))
@@ -491,10 +425,6 @@ class LargeText:
                     parts.append(self._solid(1, fg))
                 elif top_on:
                     b = bg if bottom_real else None
-                    # The upper-half block renders slightly short in some
-                    # fonts, so draw the top half with a lower-half block in
-                    # reverse video: the cell background becomes `fg` and the
-                    # glyph takes `b` (or the terminal's default background).
                     styles = list(self.styles)
                     if "reverse" not in styles:
                         styles.append("reverse")
@@ -526,7 +456,6 @@ class LargeText:
     def __repr__(self) -> str:
         return f"LargeText(text={self.text!r}, font={self.font_name!r}, format={self.format!r})"
 
-    # -- size --------------------------------------------------------------
 
     @property
     def width(self) -> int:
@@ -541,7 +470,6 @@ class LargeText:
             return (self._glyph_h + 1) // 2
         return self._glyph_h
 
-    # -- wrap / align --------------------------------------------------------
 
     def _clone(self, text: str) -> "LargeText":
         return LargeText(
@@ -558,10 +486,7 @@ class LargeText:
         )
 
     def wrap(self, width: int) -> str:
-        """Wraps at whole-character boundaries only: one big character is
-        never split mid-glyph, so a line can still come out wider than
-        `width` if a single character alone doesn't fit.
-        """
+
         width = max(1, int(width))
         char_w = self._glyph_w * (self.cell_width if self.format == "block" else 1)
         spacing_w = self.spacing * (self.cell_width if self.format == "block" else 1)
@@ -583,11 +508,11 @@ class LargeText:
         return "\n".join(self._clone(line).render() for line in lines)
 
     def align(self, width: int, align: str = "left", fillchar: Optional[str] = None) -> str:
-        """Aligns each rendered row within `width`, ANSI-aware."""
+
         rendered = self.render()
         lines = [align_text(line, width, align=align, fillchar=fillchar) for line in rendered.split("\n")]
         return "\n".join(lines)
 
     def draw(self, row: int, col: int):
-        from .terminal import print_at  # lazy: avoids a load-time cycle with .terminal
+        from .terminal import print_at
         return print_at(row, col, self.render())

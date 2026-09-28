@@ -1,11 +1,4 @@
-"""codehs_utils: a small terminal toolkit (colors, gradients, banners,
-keyboard/mouse input, drawing) originally written as one flat script for
-CodeHS's Python environment, now split into a regular package.
 
-Everything importable from the original flat module is re-exported here,
-so ``import codehs_utils`` (or ``from codehs_utils import *``) behaves the
-same as before.
-"""
 
 from ._buffer import frame, write
 from .geometry import Rect
