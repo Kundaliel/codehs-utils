@@ -1,4 +1,9 @@
+"""Windows console API bindings, used internally to provide VT-mode output,
+raw key reads, cursor position, and terminal size on Windows.
 
+Everything here is a private implementation detail of :mod:`codehs_utils`;
+the public API lives in :mod:`codehs_utils.terminal`.
+"""
 
 import os
 import time
